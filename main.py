@@ -157,6 +157,7 @@ async def apply_branding(force_avatar: bool = False):
     return list(payload)
 
 @tree.command(name = "branding", description = "(admin only) Apply the bot name and avatar from the theme config", guild=discord.Object(id=config["guild-id"]))
+@app_commands.default_permissions(manage_guild=True)
 async def branding(interaction: discord.Interaction):
 
     val = await checkPermission(interaction, admin_check=True)
@@ -404,6 +405,7 @@ class GenPanel(discord.ui.View):
         return await interaction.response.send_message(embed=await build_stock_embed(interaction.user), ephemeral=True)
 
 @tree.command(name = "panel", description = "(admin only) Post the gen panel in this channel", guild=discord.Object(id=config["guild-id"]))
+@app_commands.default_permissions(manage_guild=True)
 async def panel(interaction: discord.Interaction):
 
     val = await checkPermission(interaction, admin_check=True)
@@ -445,6 +447,7 @@ class ConfirmRebuild(discord.ui.View):
         self.stop()
 
 @tree.command(name = "rebuildserver", description = "(admin only) Build the categories and channels from the template", guild=discord.Object(id=config["guild-id"]))
+@app_commands.default_permissions(manage_guild=True)
 async def rebuildserver(interaction: discord.Interaction, delete_other_channels: bool = False):
 
     val = await checkPermission(interaction, admin_check=True)

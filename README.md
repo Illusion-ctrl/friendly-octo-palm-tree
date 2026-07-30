@@ -90,6 +90,12 @@ the same way - set `gif-img-url` to `""` if you don't want a gif on the gen mess
 
 The bot needs **Manage Channels** (and **Manage Server** if you set `server-name`).
 
+### Who can use the admin commands
+`/panel`, `/rebuildserver` and `/branding` require **Manage Server**, so Discord hides them from
+normal members instead of just refusing them. On top of that the bot still checks `admin-roles`.
+To allow a staff role that doesn't have Manage Server, go to
+`Server Settings -> Integrations -> your bot` and add a permission override per command.
+
 # Hosting on Railway
 
 The repo is ready to deploy on [Railway](https://railway.app) as a worker (no web port needed).
