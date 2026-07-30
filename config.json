@@ -1,26 +1,26 @@
 {
     "token": "DISCORD-BOT-TOKEN",
-    "guild-id": "DISCORD-SERVER-ID",
+    "guild-id": 1531412683729932451,
 
     "stock-command-silent": false,
     "remove-capture-from-stock": true,
     "commands-give-cooldown": true,
 
-    "gen-channels": [1234533378],
-    "premium-gen-channels": [1234565589],
+    "gen-channels": [1532491616118505482, 1532491846826328064],
+    "premium-gen-channels": [1532491616118505482, 1532491846826328064],
 
-    "admin-roles": [12345644489],
+    "admin-roles": [1532202094151340293],
     "default_cooldown": 600,
     "roles": [
         {
-            "id": 12345678987654322,
+            "id": 1531412886067351693,
             "free-cooldown": 600,
-            "premium-cooldown": 300,
+            "premium-cooldown": 600,
             "gen-access": ["all"],
             "remove-if-expired": false
         },
         {
-            "id": 12345678987654321,
+            "id": 1532492047813181621,
             "free-cooldown": 300,
             "premium-cooldown": 60,
             "gen-access": ["all"],
