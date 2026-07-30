@@ -10,7 +10,7 @@
 ##
 ## ##
 
-import discord, json, os
+import aiohttp, discord, json, os
 from datetime import datetime
 from discord import app_commands
 
@@ -18,6 +18,7 @@ from io import StringIO
 from typing import List
 
 from src import database
+from src import rebuild
 from src import utils
 
 bot = discord.Client(intents=discord.Intents.default())
@@ -34,6 +35,9 @@ if os.getenv("GUILD_ID"):
 serviceList = []
 serviceList_2 = []
 is_everything_ready = False 
+
+def theme(key: str, default: str = ""):
+    return config.get("theme", {}).get(key, default)
 
 async def getServiceName(service_name, is_premium = False, get_real_name = False):
     if get_real_name:
@@ -94,6 +98,9 @@ async def on_ready():
 
     guild = discord.Object(id=config["guild-id"])
 
+    # keeps panels posted by earlier runs working
+    bot.add_view(GenPanel())
+
     registered = [command.name for command in tree.get_commands()]
     if subscription.name not in registered:
         tree.add_command(subscription)
@@ -110,6 +117,13 @@ async def on_ready():
     is_everything_ready = True
     print("Logged in as {0.user}".format(bot))
 
+    try:
+        changed = await apply_branding()
+        if changed:
+            print("Applied branding:", changed)
+    except (discord.HTTPException, aiohttp.ClientError) as error:
+        print("Could not apply branding:", error)
+
     # All commands are registered per guild, so any global commands still known
     # to Discord come from an older version of the application and only show up
     # as duplicates that never respond.
@@ -118,6 +132,55 @@ async def on_ready():
         print("Removing global commands:", [c.name for c in stale_global_commands])
         tree.clear_commands(guild=None)
         await tree.sync()
+
+async def apply_branding(force_avatar: bool = False):
+    """Renames the bot and sets its avatar from the theme config. Discord only
+    allows a couple of these edits per hour, so the username is only touched
+    when it actually differs and the avatar only on an explicit request."""
+    payload = {}
+
+    username = theme("bot-username")
+    if username and bot.user.name != username:
+        payload["username"] = username
+
+    avatar_url = theme("bot-avatar-url")
+    if avatar_url and force_avatar:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(avatar_url) as response:
+                response.raise_for_status()
+                payload["avatar"] = await response.read()
+
+    if not payload:
+        return None
+
+    await bot.user.edit(**payload)
+    return list(payload)
+
+@tree.command(name = "branding", description = "(admin only) Apply the bot name and avatar from the theme config", guild=discord.Object(id=config["guild-id"]))
+async def branding(interaction: discord.Interaction):
+
+    val = await checkPermission(interaction, admin_check=True)
+    if not val:
+        return
+
+    await interaction.response.defer(ephemeral=True)
+    try:
+        changed = await apply_branding(force_avatar=True)
+    except (discord.HTTPException, aiohttp.ClientError) as error:
+        embd = discord.Embed(
+            title="Error applying branding",
+            description=f"`{error}`",
+            color=config['colors']['error']
+        )
+        return await interaction.followup.send(embed=embd, ephemeral=True)
+
+    embd = discord.Embed(
+        title="Branding",
+        description=f"Updated: `{', '.join(changed)}`" if changed else "Nothing to change.",
+        color=config['colors']['success']
+    )
+    embd.set_footer(text=config['messages']['footer-msg'])
+    return await interaction.followup.send(embed=embd, ephemeral=True)
 
 async def checkPermission(interaction: discord.Interaction, admin_check: bool = False):
     if not is_everything_ready:
@@ -159,9 +222,7 @@ async def removeExpiredRoles(interaction: discord.Interaction, user: discord.Use
                 await user.remove_roles(role, reason="Subscription has expired.")
     return
 
-@tree.command(name = "gen", description = "Generate an account of your choice", guild=discord.Object(id=config["guild-id"]))
-@app_commands.autocomplete(service=service_autcom)
-async def gen(interaction: discord.Interaction, service: str, is_premium: bool=False):
+async def perform_gen(interaction: discord.Interaction, service: str, is_premium: bool=False):
     
     val = await checkPermission(interaction)
     if not val:
@@ -261,7 +322,8 @@ async def gen(interaction: discord.Interaction, service: str, is_premium: bool=F
             )
             embd2=discord.Embed(title=f"`{service}` generated :label: ",description=f':incoming_envelope: Check your DMs for the account.',color=config['colors']['success'])
             embd2.set_footer(text=config['messages']['footer-msg'],icon_url=get_user_pfp(interaction.user))
-            embd2.set_image(url=config["generate-settings"]["gif-img-url"])
+            if config["generate-settings"]["gif-img-url"]:
+                embd2.set_image(url=config["generate-settings"]["gif-img-url"])
             await interaction.followup.send(embed=embd2, ephemeral=False)
             embd.set_footer(text=config['messages']['footer-msg'],icon_url=get_user_pfp(interaction.user))
         except discord.errors.NotFound:
@@ -274,6 +336,170 @@ async def gen(interaction: discord.Interaction, service: str, is_premium: bool=F
         await database.addStock(real_service_name, [account], config['remove-capture-from-stock'])
         await database.reset_user_cooldown(str(interaction.user.id), rndm_stage)
         return await interaction.followup.send(content=f"{interaction.user.mention}, couldn't send you a DM, open your DMs!", ephemeral=True)
+
+@tree.command(name = "gen", description = "Generate an account of your choice", guild=discord.Object(id=config["guild-id"]))
+@app_commands.autocomplete(service=service_autcom)
+async def gen(interaction: discord.Interaction, service: str, is_premium: bool=False):
+    return await perform_gen(interaction, service, is_premium)
+
+class GenSelect(discord.ui.Select):
+    def __init__(self, is_premium: bool):
+        self.is_premium = is_premium
+        options = [
+            discord.SelectOption(label=service, value=service, emoji=theme("service-emoji", "🔹"))
+            for service in sorted(serviceList_2)[:25]
+        ]
+        super().__init__(
+            placeholder=f"Choose a {'premium' if is_premium else 'free'} service",
+            options=options,
+            min_values=1,
+            max_values=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        return await perform_gen(interaction, self.values[0], self.is_premium)
+
+class ServicePicker(discord.ui.View):
+    def __init__(self, is_premium: bool):
+        super().__init__(timeout=60)
+        self.add_item(GenSelect(is_premium))
+
+class GenPanel(discord.ui.View):
+    """Panel that stays usable after restarts, so it needs static custom_ids.
+    The service list is built when a button is pressed instead of being part of
+    the panel message, so restocking never leaves the panel out of date."""
+
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    async def send_picker(self, interaction: discord.Interaction, is_premium: bool):
+        if not await checkPermission(interaction):
+            return
+        if not serviceList_2:
+            embed_error = discord.Embed(
+                title="Error: No services",
+                description="There is no stock to generate from yet.",
+                color=config['colors']['error']
+            )
+            return await interaction.response.send_message(embed=embed_error, ephemeral=True)
+        return await interaction.response.send_message(
+            content=f"Pick the {'premium' if is_premium else 'free'} service you want:",
+            view=ServicePicker(is_premium),
+            ephemeral=True
+        )
+
+    @discord.ui.button(label="Free Gen", emoji="💚", style=discord.ButtonStyle.success, custom_id="genpanel:free")
+    async def free_gen(self, interaction: discord.Interaction, button: discord.ui.Button):
+        return await self.send_picker(interaction, False)
+
+    @discord.ui.button(label="Premium Gen", emoji="💜", style=discord.ButtonStyle.primary, custom_id="genpanel:premium")
+    async def premium_gen(self, interaction: discord.Interaction, button: discord.ui.Button):
+        return await self.send_picker(interaction, True)
+
+    @discord.ui.button(label="Stock", emoji="📦", style=discord.ButtonStyle.secondary, custom_id="genpanel:stock")
+    async def show_stock(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await checkPermission(interaction):
+            return
+        await database.addUser(str(interaction.user.id))
+        return await interaction.response.send_message(embed=await build_stock_embed(interaction.user), ephemeral=True)
+
+@tree.command(name = "panel", description = "(admin only) Post the gen panel in this channel", guild=discord.Object(id=config["guild-id"]))
+async def panel(interaction: discord.Interaction):
+
+    val = await checkPermission(interaction, admin_check=True)
+    if not val:
+        return
+
+    embd = discord.Embed(
+        title=theme("panel-title", "★ GEN PANEL ★"),
+        description=theme("panel-description", "Press a button below to generate an account."),
+        color=config['colors']['success']
+    )
+    if theme("panel-image-url"):
+        embd.set_image(url=theme("panel-image-url"))
+    if theme("panel-thumbnail-url"):
+        embd.set_thumbnail(url=theme("panel-thumbnail-url"))
+    embd.set_footer(text=config['messages']['footer-msg'])
+
+    await interaction.channel.send(embed=embd, view=GenPanel())
+    return await interaction.response.send_message("Panel posted.", ephemeral=True)
+
+class ConfirmRebuild(discord.ui.View):
+    def __init__(self, author_id: int):
+        super().__init__(timeout=60)
+        self.author_id = author_id
+        self.confirmed = False
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        return interaction.user.id == self.author_id
+
+    @discord.ui.button(label="Rebuild", style=discord.ButtonStyle.danger)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.confirmed = True
+        await interaction.response.edit_message(content="Rebuilding...", view=None)
+        self.stop()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="Cancelled.", view=None)
+        self.stop()
+
+@tree.command(name = "rebuildserver", description = "(admin only) Build the categories and channels from the template", guild=discord.Object(id=config["guild-id"]))
+async def rebuildserver(interaction: discord.Interaction, delete_other_channels: bool = False):
+
+    val = await checkPermission(interaction, admin_check=True)
+    if not val:
+        return
+
+    template = config.get("server-template", [])
+    if not template:
+        embed_error = discord.Embed(
+            title="Error: No template",
+            description="`server-template` is empty in config.json.",
+            color=config['colors']['error']
+        )
+        return await interaction.response.send_message(embed=embed_error, ephemeral=True)
+
+    channel_count = sum(len(category.get("channels", [])) for category in template)
+    warning = (
+        f"This creates up to `{len(template)}` categories and `{channel_count}` channels."
+        "\nChannels that already exist are left alone."
+    )
+    if delete_other_channels:
+        warning += "\n\n:warning: **Every channel that is not in the template will be deleted.**"
+
+    view = ConfirmRebuild(interaction.user.id)
+    await interaction.response.send_message(content=warning, view=view, ephemeral=True)
+    await view.wait()
+    if not view.confirmed:
+        return
+
+    report = await rebuild.apply_template(
+        interaction.guild,
+        template,
+        config['admin-roles'],
+        delete_existing=delete_other_channels,
+        protected_channel_id=interaction.channel_id,
+    )
+
+    if theme("server-name"):
+        try:
+            await interaction.guild.edit(name=theme("server-name"), reason="Server rebuild")
+        except discord.HTTPException as error:
+            report["failed"].append(f"server name: {error}")
+
+    embd = discord.Embed(
+        title="Server rebuild",
+        description=(
+            f"**Created** (`{len(report['created'])}`): {', '.join(report['created']) or 'nothing'}\n\n"
+            f"**Already there** (`{len(report['existing'])}`)\n\n"
+            f"**Deleted** (`{len(report['deleted'])}`): {', '.join(report['deleted']) or 'nothing'}\n\n"
+            f"**Failed** (`{len(report['failed'])}`): {', '.join(report['failed']) or 'nothing'}"
+        )[:4000],
+        color=config['colors']['success'] if not report['failed'] else config['colors']['error']
+    )
+    embd.set_footer(text=config['messages']['footer-msg'])
+    return await interaction.followup.send(embed=embd, ephemeral=True)
 
 @tree.command(name = "addstock", description = "(admin only)", guild=discord.Object(id=config["guild-id"]))
 @app_commands.autocomplete(service=service_autcom)
@@ -460,6 +686,10 @@ async def stock(interaction: discord.Interaction):
 
     await database.addUser(str(interaction.user.id))
 
+    embd = await build_stock_embed(interaction.user)
+    return await interaction.response.send_message(embed=embd, ephemeral=config["stock-command-silent"])
+
+async def build_stock_embed(user: discord.User = None):
     stock = await database.getStock(serviceList)
     if len(stock) <= 0:
         embd = discord.Embed(
@@ -467,8 +697,8 @@ async def stock(interaction: discord.Interaction):
             description="There are no services to display",
             color=config["colors"]["stock"],
         )
-        embd.set_footer(text=config["messages"]["footer-msg"],icon_url=get_user_pfp(interaction.user))
-        return await interaction.response.send_message(embed=embd)
+        embd.set_footer(text=config["messages"]["footer-msg"],icon_url=get_user_pfp(user))
+        return embd
 
     grouped_stock = {}
     for stk in stock:
@@ -493,9 +723,9 @@ async def stock(interaction: discord.Interaction):
         description="\n".join(filtered_stock),
         color=config["colors"]["stock"],
     )
-    embd.set_footer(text=config["messages"]["footer-msg"],icon_url=get_user_pfp(interaction.user))
+    embd.set_footer(text=config["messages"]["footer-msg"],icon_url=get_user_pfp(user))
 
-    return await interaction.response.send_message(embed=embd, ephemeral=config["stock-command-silent"])
+    return embd
 
 @subscription.command(name = "add", description = "(admin only)")
 async def addsubscription(interaction: discord.Interaction, user: discord.User, time_sec: int, is_silent: bool=False):

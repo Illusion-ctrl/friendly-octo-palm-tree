@@ -32,12 +32,12 @@
     "subscription-stages": ["Free", "Premium"],
 
     "messages": {
-        "altsent": "Thank you for using **AtluzkaGEN**",
-        "footer-msg": "github.com/Atluzka/account-gen-bot"
+        "altsent": "Thank you for using **CRISTIANO GEN** :goat:",
+        "footer-msg": "CRISTIANO GEN • SIUUU"
     },
 
     "generate-settings": {
-        "gif-img-url": "https://media1.tenor.com/m/tM-b_68cljEAAAAd/playboi-carti-carti.gif"
+        "gif-img-url": ""
     },
 
     "colors": {
@@ -45,6 +45,81 @@
         "success": 1288807,
         "stock": 7229605
     },
+
+    "_comment2": "Branding. bot-username/bot-avatar-url are applied on startup, leave empty to keep the current ones.",
+    "theme": {
+        "bot-username": "Cristiano GEN",
+        "bot-avatar-url": "",
+        "server-name": "",
+        "panel-title": ":goat: CRISTIANO GEN :goat:",
+        "panel-description": "**SIUUUU!** Pick your tier below and the account lands in your DMs.\n\n:green_heart: **Free Gen** - available to everyone\n:purple_heart: **Premium Gen** - subscribers only\n:package: **Stock** - see what's available",
+        "panel-image-url": "",
+        "panel-thumbnail-url": "",
+        "service-emoji": "\u26bd"
+    },
+
+    "_comment3": "Layout used by /rebuildserver. private:true hides the channel from everyone except admin-roles (plus any role ids in roles).",
+    "server-template": [
+        {
+            "name": "STAFF",
+            "private": true,
+            "channels": [
+                {"name": "\ud83d\udcdclog"},
+                {"name": "\ud83d\udeabgen-ban"}
+            ]
+        },
+        {
+            "name": "IMPORTANT",
+            "channels": [
+                {"name": "\ud83d\udce3announcements"},
+                {"name": "\ud83d\udce6restock"},
+                {"name": "\ud83d\udee0temp-mail"},
+                {"name": "\u2705verify"}
+            ]
+        },
+        {
+            "name": "REWARDS",
+            "channels": [
+                {"name": "\u2795invites"},
+                {"name": "\ud83c\udf81invite-rewards"},
+                {"name": "\ud83c\udf81boost-rewards"}
+            ]
+        },
+        {
+            "name": "DROPS",
+            "channels": [
+                {"name": "\ud83d\udce6free-drop"},
+                {"name": "\ud83d\udce6combo"},
+                {"name": "\ud83d\udce6way-to-link"}
+            ]
+        },
+        {
+            "name": "COOKIES",
+            "channels": [
+                {"name": "\ud83c\udf6anetflix-cookies"},
+                {"name": "\ud83c\udf6acrunchyroll-cookies"},
+                {"name": "\ud83c\udf6atutorial"}
+            ]
+        },
+        {
+            "name": "CHAT",
+            "channels": [
+                {"name": "\ud83d\udcacchat"},
+                {"name": "\ud83d\udca1suggestions"},
+                {"name": "\ud83c\udf9bvouch"},
+                {"name": "\ud83c\udf9bproofs"}
+            ]
+        },
+        {
+            "name": "G3N",
+            "channels": [
+                {"name": "\u2753how-to-access"},
+                {"name": "\ud83d\udc9ffree-gen"},
+                {"name": "\ud83d\udc9cpremium-gen", "private": true, "roles": [1532492047813181621]},
+                {"name": "\ud83d\udc9cbooster-gen", "private": true}
+            ]
+        }
+    ],
 
     "_comment1": "Size for uploading stock. Default: 2097152 == 2mb",
     "maximum-file-size": 2097152

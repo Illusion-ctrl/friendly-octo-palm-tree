@@ -5,6 +5,9 @@ A discord bot which manages a database of accounts and provides a user-friendly 
 # Commands
 Parameters marked with a star(*) are required.
 * `/addstock *[service] *[txt_file] [is_premium] [is_silent]` - Adds your lines to the database.
+* `/panel` - Admin only. Posts the gen panel (Free Gen / Premium Gen / Stock buttons) in the current channel.
+* `/rebuildserver [delete_other_channels]` - Admin only. Creates the categories and channels from `server-template` in the config. Asks for confirmation first.
+* `/branding` - Admin only. Applies `theme.bot-username` and `theme.bot-avatar-url` to the bot.
 * `/blacklist *[user] [status]` - Blacklist the user from using /gen.
 * `/bulkgen *[service] *[amount] *[is_premium] [is_silent]` - Admin only. Generate multiple accounts at a time.
 * `/clearservice *[service] [is_premium]` - Clear all lines from a specific stock.
@@ -42,6 +45,50 @@ In the config you need to put your **DISCORD BOT TOKEN** not your account token,
 You can invite it from the Discord Developer Portal. Choose the bot you want to invite. Go to OAuth2 tab. Scroll down to 'OAuth2 URL Generator'. Enable 'bot' and 'applications.commands'. An invite link gets generated at the bottom. Copy it and open it in a new tab.
 Invite the bot to your server. Now you can run the main.py file.
 
+
+# Panel, theming and server template
+
+### Gen panel
+Run `/panel` in the channel you want it in. It posts an embed with **Free Gen**, **Premium Gen** and
+**Stock** buttons; clicking one opens a private service picker and the account is DM'd as usual.
+The panel keeps working after restarts and never goes stale, because the service list is built when
+the button is pressed instead of being baked into the message. All the normal checks still apply, so
+the panel has to live in one of your `gen-channels` (or you have to have an admin role).
+
+### Theming
+The `theme` section of config.json controls the branding:
+
+| Key | What it does |
+| --- | --- |
+| `bot-username` | Renamed on startup when it differs. Discord allows 2 renames per hour. |
+| `bot-avatar-url` | Direct link to a png/jpg. Applied by `/branding` (not on every restart, to avoid rate limits). |
+| `server-name` | Renames the server during `/rebuildserver`. Leave empty to skip. |
+| `panel-title`, `panel-description`, `panel-image-url`, `panel-thumbnail-url` | The panel embed. |
+| `service-emoji` | Emoji shown next to each service in the picker. |
+
+`messages.altsent`, `messages.footer-msg`, `colors` and `generate-settings.gif-img-url` still work
+the same way - set `gif-img-url` to `""` if you don't want a gif on the gen message.
+
+### Server template
+`server-template` in config.json is the layout `/rebuildserver` builds:
+
+```json
+{
+    "name": "G3N",
+    "channels": [
+        {"name": "free-gen"},
+        {"name": "premium-gen", "private": true, "roles": [ROLE_ID]}
+    ]
+}
+```
+
+* `private: true` hides the channel (or whole category) from `@everyone` and allows `admin-roles`.
+* `roles` grants extra role ids access on top of the admins.
+* Channels that already exist are skipped, so running it twice is harmless.
+* `delete_other_channels: true` deletes every channel **not** in the template - the channel you ran
+  the command in is always kept.
+
+The bot needs **Manage Channels** (and **Manage Server** if you set `server-name`).
 
 # Hosting on Railway
 
