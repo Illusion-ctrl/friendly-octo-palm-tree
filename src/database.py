@@ -17,6 +17,10 @@ config = json.load(open('config.json'))
 # live on a persistent volume (e.g. a Railway volume mounted at /data).
 DB_PATH = os.getenv("DATABASE_PATH", "database.db")
 
+_db_dir = os.path.dirname(DB_PATH)
+if _db_dir:
+    os.makedirs(_db_dir, exist_ok=True)
+
 Base = declarative_base()
 engine = create_async_engine(f"sqlite+aiosqlite:///{DB_PATH}")
 Session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
