@@ -89,10 +89,19 @@ cooldown = app_commands.Group(name="cooldown", description="Manage cooldowns")
 @bot.event
 async def on_ready():
     global is_everything_ready
-    tree.add_command(subscription)
-    tree.add_command(cooldown)
-    tree.copy_global_to(guild=discord.Object(id=config["guild-id"]))
-    await tree.sync(guild=discord.Object(id=config["guild-id"]))
+    if is_everything_ready:
+        return
+
+    guild = discord.Object(id=config["guild-id"])
+
+    registered = [command.name for command in tree.get_commands()]
+    if subscription.name not in registered:
+        tree.add_command(subscription)
+    if cooldown.name not in registered:
+        tree.add_command(cooldown)
+
+    tree.copy_global_to(guild=guild)
+    await tree.sync(guild=guild)
     await database.init_db()
     
     await updateServices()
@@ -100,6 +109,15 @@ async def on_ready():
     
     is_everything_ready = True
     print("Logged in as {0.user}".format(bot))
+
+    # All commands are registered per guild, so any global commands still known
+    # to Discord come from an older version of the application and only show up
+    # as duplicates that never respond.
+    stale_global_commands = await tree.fetch_commands()
+    if stale_global_commands:
+        print("Removing global commands:", [c.name for c in stale_global_commands])
+        tree.clear_commands(guild=None)
+        await tree.sync()
 
 async def checkPermission(interaction: discord.Interaction, admin_check: bool = False):
     if not is_everything_ready:
