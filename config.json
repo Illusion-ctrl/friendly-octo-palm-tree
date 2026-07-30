@@ -6,8 +6,9 @@
     "remove-capture-from-stock": true,
     "commands-give-cooldown": true,
 
-    "gen-channels": [1532491616118505482, 1532491846826328064],
-    "premium-gen-channels": [1532491616118505482, 1532491846826328064],
+    "_comment4": "gen-channels accept channel ids or channel names (names keep working after /rebuildserver)",
+    "gen-channels": ["\ud83d\udc9ffree-gen", "\ud83d\udc9cpremium-gen", "\ud83d\udc9cbooster-gen"],
+    "premium-gen-channels": ["\ud83d\udc9cpremium-gen", "\ud83d\udc9cbooster-gen"],
 
     "admin-roles": [1532202094151340293],
     "default_cooldown": 600,

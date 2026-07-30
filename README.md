@@ -90,6 +90,17 @@ the same way - set `gif-img-url` to `""` if you don't want a gif on the gen mess
 
 The bot needs **Manage Channels** (and **Manage Server** if you set `server-name`).
 
+### Gen channels
+`gen-channels` and `premium-gen-channels` accept channel **ids** or channel **names**:
+
+```json
+"gen-channels": ["free-gen", 1532491616118505482]
+```
+
+Names are compared ignoring case, spaces and emojis, so `free-gen`, `Free Gen` and `💚free-gen` all
+match the same channel. Use names if you plan to run `/rebuildserver`, because recreating a channel
+gives it a new id and any id you configured would stop matching.
+
 ### Who can use the admin commands
 `/panel`, `/rebuildserver` and `/branding` require **Manage Server**, so Discord hides them from
 normal members instead of just refusing them. On top of that the bot still checks `admin-roles`.

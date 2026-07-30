@@ -39,6 +39,31 @@ is_everything_ready = False
 def theme(key: str, default: str = ""):
     return config.get("theme", {}).get(key, default)
 
+def channel_slug(name: str):
+    """Channel names are compared without emojis or decoration, so `free-gen`
+    and `💚free-gen` are treated as the same channel."""
+    slug = rebuild.normalize(name)
+    return "".join(char for char in slug if char.isascii() and (char.isalnum() or char == "-")).strip("-")
+
+def channel_matches(channel, entries):
+    """gen-channels entries can be ids or channel names, so recreating a channel
+    (a rebuild gives it a new id) does not lock everyone out."""
+    if channel is None:
+        return False
+    for entry in entries:
+        if isinstance(entry, int) or str(entry).isdigit():
+            if channel.id == int(entry):
+                return True
+        elif channel_slug(str(entry)) == channel_slug(getattr(channel, "name", "")):
+            return True
+    return False
+
+def channel_list_text(entries):
+    return ", ".join(
+        f"<#{entry}>" if isinstance(entry, int) or str(entry).isdigit() else f"`#{entry}`"
+        for entry in entries
+    ) or "`none configured`"
+
 async def getServiceName(service_name, is_premium = False, get_real_name = False):
     if get_real_name:
         return service_name.split("_")[0]
@@ -267,12 +292,10 @@ async def perform_gen(interaction: discord.Interaction, service: str, is_premium
         )
         return await interaction.response.send_message(embed=embed_error, ephemeral=True)
 
-    if not any(role_id in config['admin-roles'] for role_id in role_ids) and not interaction.channel_id in config["gen-channels"] and not interaction.channel_id in config["premium-gen-channels"]:
-        channel_list = [f"<#{channel}>" for channel in config["gen-channels"]]
-        p_channel_list = [f"<#{channel}>" for channel in config["premium-gen-channels"]]
+    if not any(role_id in config['admin-roles'] for role_id in role_ids) and not channel_matches(interaction.channel, config["gen-channels"]) and not channel_matches(interaction.channel, config["premium-gen-channels"]):
         embed_error = discord.Embed(
             title=f"Error: Wrong channel",
-            description=f"You don't have permission to use this command in this channel\n\n:smile: **Free channels**: {', '.join(channel_list)}.\n:gem: **Premium channels**: {', '.join(p_channel_list)}.",
+            description=f"You don't have permission to use this command in this channel\n\n:smile: **Free channels**: {channel_list_text(config['gen-channels'])}.\n:gem: **Premium channels**: {channel_list_text(config['premium-gen-channels'])}.",
             color=config['colors']['error']
         )
         return await interaction.response.send_message(embed=embed_error, ephemeral=True)
