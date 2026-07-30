@@ -37,7 +37,7 @@
     },
 
     "generate-settings": {
-        "gif-img-url": ""
+        "gif-img-url": "https://raw.githubusercontent.com/Illusion-ctrl/friendly-octo-palm-tree/main/assets/cr7-portugal.jpg"
     },
 
     "colors": {
@@ -49,12 +49,12 @@
     "_comment2": "Branding. bot-username/bot-avatar-url are applied on startup, leave empty to keep the current ones.",
     "theme": {
         "bot-username": "Cristiano GEN",
-        "bot-avatar-url": "",
+        "bot-avatar-url": "https://raw.githubusercontent.com/Illusion-ctrl/friendly-octo-palm-tree/main/assets/cr7-face.jpg",
         "server-name": "",
         "panel-title": ":goat: CRISTIANO GEN :goat:",
         "panel-description": "**SIUUUU!** Pick your tier below and the account lands in your DMs.\n\n:green_heart: **Free Gen** - available to everyone\n:purple_heart: **Premium Gen** - subscribers only\n:package: **Stock** - see what's available",
-        "panel-image-url": "",
-        "panel-thumbnail-url": "",
+        "panel-image-url": "https://raw.githubusercontent.com/Illusion-ctrl/friendly-octo-palm-tree/main/assets/cr7-banner.jpg",
+        "panel-thumbnail-url": "https://raw.githubusercontent.com/Illusion-ctrl/friendly-octo-palm-tree/main/assets/cr7-madrid.jpg",
         "service-emoji": "\u26bd"
     },
 
