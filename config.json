@@ -108,7 +108,7 @@
             "name": "G3N",
             "channels": [
                 {"name": "\u2753how-to-access"},
-                {"name": "\ud83d\udc9ffree-gen"},
+                {"name": "💖free-gen", "private": true, "roles": [1533937744978382928]},
                 {"name": "\ud83d\udc9cpremium-gen", "private": true},
                 {"name": "\ud83d\udc9cbooster-gen", "private": true}
             ]
