@@ -14,18 +14,11 @@
     "default_cooldown": 600,
     "roles": [
         {
-            "id": 1531412886067351693,
+            "id": 1533937744978382928,
             "free-cooldown": 600,
             "premium-cooldown": 600,
             "gen-access": ["all"],
             "remove-if-expired": false
-        },
-        {
-            "id": 1532492047813181621,
-            "free-cooldown": 300,
-            "premium-cooldown": 60,
-            "gen-access": ["all"],
-            "remove-if-expired": true
         }
     ],
 
@@ -116,7 +109,7 @@
             "channels": [
                 {"name": "\u2753how-to-access"},
                 {"name": "\ud83d\udc9ffree-gen"},
-                {"name": "\ud83d\udc9cpremium-gen", "private": true, "roles": [1532492047813181621]},
+                {"name": "\ud83d\udc9cpremium-gen", "private": true},
                 {"name": "\ud83d\udc9cbooster-gen", "private": true}
             ]
         }
