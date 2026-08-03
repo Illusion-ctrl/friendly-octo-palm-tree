@@ -321,19 +321,19 @@ async def perform_gen(interaction: discord.Interaction, service: str, is_premium
         _data = await database.getCooldownData(interaction.user.id, rndm_stage)
         if _data['stillHasCooldown']:
             embd=discord.Embed(title="Cooldown",description=f':no_entry_sign: {_data["formatedCooldownMsg"]}',color=config['colors']['error'])
-            return await interaction.response.send_message(embed=embd, ephemeral=False)
+            return await interaction.response.send_message(embed=embd, ephemeral=True)
         elif _data['secondsTillEnd'] == 0:
             _user_cldw = await database.get_role_user_cooldown(interaction, is_premium)
             if _user_cldw is not None:
                 await database.set_user_cooldown(interaction.user.id, rndm_stage, int(_user_cldw))
     
-    await interaction.response.defer()
+    await interaction.response.defer(ephemeral=True)
     real_service_name = await getServiceName(service, is_premium)
     success, account = await database.getAccount(real_service_name)
     if not success:
         if _user_cldw:
             await database.reset_user_cooldown(str(interaction.user.id), rndm_stage)
-        return await interaction.followup.send(f"There is no stock left.", ephemeral=False)
+        return await interaction.followup.send(f"There is no stock left.", ephemeral=True)
     else:
         try:
 
@@ -348,7 +348,7 @@ async def perform_gen(interaction: discord.Interaction, service: str, is_premium
             embd2.set_footer(text=config['messages']['footer-msg'],icon_url=get_user_pfp(interaction.user))
             if config["generate-settings"]["gif-img-url"]:
                 embd2.set_image(url=config["generate-settings"]["gif-img-url"])
-            await interaction.followup.send(embed=embd2, ephemeral=False)
+            await interaction.followup.send(embed=embd2, ephemeral=True)
             embd.set_footer(text=config['messages']['footer-msg'],icon_url=get_user_pfp(interaction.user))
         except discord.errors.NotFound:
             return await interaction.followup.send(content=f"{interaction.user.mention}, there was an error with your command execution!", ephemeral=True)
@@ -713,7 +713,7 @@ async def stock(interaction: discord.Interaction):
     await database.addUser(str(interaction.user.id))
 
     embd = await build_stock_embed(interaction.user)
-    return await interaction.response.send_message(embed=embd, ephemeral=config["stock-command-silent"])
+    return await interaction.response.send_message(embed=embd, ephemeral=True)
 
 async def build_stock_embed(user: discord.User = None):
     stock = await database.getStock(serviceList)
@@ -754,7 +754,7 @@ async def build_stock_embed(user: discord.User = None):
     return embd
 
 @subscription.command(name = "add", description = "(admin only)")
-async def addsubscription(interaction: discord.Interaction, user: discord.User, time_sec: int, is_silent: bool=False):
+async def addsubscription(interaction: discord.Interaction, user: discord.User, time_sec: int, is_silent: bool=True):
     
     val = await checkPermission(interaction, admin_check=True)
     if not val:
@@ -780,7 +780,7 @@ async def addsubscription(interaction: discord.Interaction, user: discord.User, 
     return await interaction.response.send_message(embed=embd, ephemeral=is_silent)
 
 @subscription.command(name = "massadd", description = "(admin only)")
-async def massaddsubscription(interaction: discord.Interaction, time_sec: int, is_silent: bool=False):
+async def massaddsubscription(interaction: discord.Interaction, time_sec: int, is_silent: bool=True):
     
     val = await checkPermission(interaction, admin_check=True)
     if not val:
@@ -806,7 +806,7 @@ async def massaddsubscription(interaction: discord.Interaction, time_sec: int, i
     return await interaction.edit_original_response(content=None, embed=embd)
 
 @subscription.command(name = "view", description = "View your subscription")
-async def viewsubscription(interaction: discord.Interaction, user: discord.User=None, is_silent: bool=False):
+async def viewsubscription(interaction: discord.Interaction, user: discord.User=None, is_silent: bool=True):
     if user and str(user.id).strip() != str(interaction.user.id).strip():
         val = await checkPermission(interaction, admin_check=True)
         if not val:
@@ -819,8 +819,7 @@ async def viewsubscription(interaction: discord.Interaction, user: discord.User=
             embd=discord.Embed(
                 title=f"Viewing {user.name}'s subscription",
                 description=f"**Subscription stage**: `{_user.subscription_stage}`\n" +
-                f"**Expiration**: {expire}\n" +
-                f"**Custom Cooldown**: \n* **Free**: `{_user.custom_cooldown.get('Free', '`None`')}` seconds\n* **Premium**: `{_user.custom_cooldown.get('Premium', '`None`')}` seconds\n",
+                f"**Expiration**: {expire}\n",
                 color=int(config['colors']['success'])
             )
             embd.set_footer(text=config['messages']['footer-msg'],icon_url=get_user_pfp(interaction.user))
@@ -864,7 +863,7 @@ async def viewsubscription(interaction: discord.Interaction, user: discord.User=
         return await interaction.response.send_message(embed=embd, ephemeral=is_silent)
 
 @subscription.command(name = "set", description = "(admin only)")
-async def setsubscription(interaction: discord.Interaction, user: discord.User,  time_sec: int, is_silent: bool=False):
+async def setsubscription(interaction: discord.Interaction, user: discord.User,  time_sec: int, is_silent: bool=True):
     
     val = await checkPermission(interaction, admin_check=True)
     if not val:
@@ -890,7 +889,7 @@ async def setsubscription(interaction: discord.Interaction, user: discord.User, 
     return await interaction.response.send_message(embed=embd, ephemeral=is_silent)
 
 @subscription.command(name = "remove", description = "(admin only)")
-async def setsubscription(interaction: discord.Interaction, user: discord.User, is_silent: bool=False):
+async def setsubscription(interaction: discord.Interaction, user: discord.User, is_silent: bool=True):
     
     val = await checkPermission(interaction, admin_check=True)
     if not val:
@@ -918,7 +917,7 @@ async def setsubscription(interaction: discord.Interaction, user: discord.User, 
 
 @cooldown.command(name = "set", description = "(admin only)")
 @app_commands.autocomplete(stage=stage_autcom)
-async def setcustomcooldown(interaction: discord.Interaction, user: discord.User, stage: str, time_sec: int=None, is_silent: bool=False):
+async def setcustomcooldown(interaction: discord.Interaction, user: discord.User, stage: str, time_sec: int=None, is_silent: bool=True):
     
     val = await checkPermission(interaction, admin_check=True)
     if not val:
