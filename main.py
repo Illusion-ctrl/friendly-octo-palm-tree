@@ -304,7 +304,7 @@ async def perform_gen(interaction: discord.Interaction, service: str, is_premium
     if not any(role_id in config['admin-roles'] for role_id in role_ids) and not utl_res:
         embed_error = discord.Embed(
             title=f"Error: Access Forbidden",
-            description=f"You don't have permission to use this command.",
+            description=f"You don't have permission to use this service. You need the proper generator role to access this.",
             color=config['colors']['error']
         )
         return await interaction.response.send_message(embed=embed_error, ephemeral=True)
